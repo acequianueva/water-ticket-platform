@@ -41,3 +41,4 @@ Built generically so any irrigation community can deploy their own instance.
 | [06-admin-flows.md](./06-admin-flows.md) | Goiatz admin panel, Francis weekly report, season management |
 | [07-notifications.md](./07-notifications.md) | Email and WhatsApp notification strategy |
 | [08-security-and-compliance.md](./08-security-and-compliance.md) | Auth, GDPR, infrastructure security |
+| [09-ci-cd.md](./09-ci-cd.md) | CI/CD pipeline, environments, IaC decision, GitHub Actions workflows |
