@@ -1,0 +1,92 @@
+# Architecture
+
+## Infrastructure: Cloudflare-first
+
+The platform runs entirely on Cloudflare's edge network. No traditional server or VPS required.
+
+- **Domain**: `acequianueva.com` (existing) — new subdomain e.g. `tienda.acequianueva.com`
+- **DNS & CDN**: Cloudflare (already managing the domain)
+
+---
+
+## Cloudflare services
+
+| Service | Purpose | Free tier |
+|---|---|---|
+| **Pages** | Frontend hosting (React + Vite, TypeScript) | Unlimited requests |
+| **Workers** | Backend API + webhook handlers | 100k req/day |
+| **D1** | SQLite relational database | 500 MB, 5M rows read/day |
+| **KV** | Server-side session storage, rate-limit counters | 100k reads/day |
+| **Cron Triggers** | Wednesday 9pm weekly report job | Free |
+| **R2** | PDF voucher storage | 10 GB/month free |
+
+All free tiers are orders of magnitude above what ~55 users with seasonal traffic will generate. The Workers paid plan ($5/month) is available if limits are approached.
+
+---
+
+## Third-party services
+
+| Service | Purpose | Cost |
+|---|---|---|
+| **Stripe** or **Redsys** | Payment processing | See [02-payments.md](./02-payments.md) |
+| **Resend** | Transactional email | Free (3,000 emails/month) |
+
+---
+
+## Runtime stack
+
+| Layer | Technology |
+|---|---|
+| Language | TypeScript throughout |
+| Frontend | React + Vite, deployed to Cloudflare Pages |
+| Backend | [Hono](https://hono.dev) on Cloudflare Workers — lightweight, edge-native |
+| Database ORM | [Drizzle ORM](https://orm.drizzle.team) on Cloudflare D1 |
+| PDF generation | `pdf-lib` (runs in Worker, no Node.js required) |
+| Email | Resend REST API |
+| Auth | Session tokens in KV + HttpOnly cookies |
+
+---
+
+## Why not an off-the-shelf SaaS?
+
+**Shopify**
+- ~€32/month base + transaction fees
+- Generic public storefront requires heavy customisation for: closed-community login, usage tracking, weekly operator reports
+- Cannot model the "bucket of hours" concept natively
+- Verdict: overcomplicated and over-priced for this use case
+
+**WooCommerce (WordPress)**
+- Requires WordPress hosting + ongoing maintenance
+- Redsys plugin available (~€60 one-time) but adds another dependency
+- Same customisation problems as Shopify for the admin/operator workflow
+- Verdict: brings significant accidental complexity
+
+**SuperSaaS / Bookeo / generic booking SaaS**
+- Built for appointment/time-slot booking, not prepaid-hour vouchers
+- Would need workarounds for the usage-deduction and weekly-report flows
+- Adds a monthly SaaS fee for a workflow that doesn't quite fit
+- Verdict: wrong category of product
+
+**Conclusion**: a custom build on Cloudflare is cheaper long-term (infrastructure near-zero), fits the specific workflow precisely, and keeps the codebase in one place. The generic open-source structure means other communities benefit too.
+
+---
+
+## Deployment topology
+
+```
+User browser
+    │
+    ▼
+Cloudflare CDN  ──►  Pages (React frontend)
+    │
+    ▼
+Cloudflare Worker (Hono API)
+    ├── D1 (SQLite — users, purchases, usage, seasons)
+    ├── KV (sessions, rate-limit counters)
+    ├── R2 (PDF voucher files)
+    ├── Stripe / Redsys (payment redirect / webhook)
+    └── Resend (email)
+
+Cron Trigger (Wed 19:00 UTC)
+    └── Worker job → D1 query → Resend email to Francis + Goiatz
+```
