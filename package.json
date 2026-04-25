@@ -1,0 +1,18 @@
+{
+  "name": "water-ticket-platform",
+  "version": "0.1.0",
+  "description": "Open-source platform for agricultural water communities to sell and manage water-usage hour vouchers online.",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^6.0.3"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/acequianueva/water-ticket-platform"
+  }
+}
