@@ -7,7 +7,27 @@
 - Average purchase: 3 hours × €12 = €36
 - Estimated transactions per season: ~133
 - Total revenue per season: ~€4,800
-- User base: ~55 members, predominantly Spanish bank cards (national rate applies)
+- User base: ~55 members — predominantly Spanish bank cards, some British (non-EEA post-Brexit)
+
+---
+
+## UK / non-EEA cards — cost and legal note
+
+Post-Brexit, UK-issued cards are treated as **international non-EEA** by all processors. This has two implications:
+
+**Higher fees**: the EU interchange cap no longer applies to UK cards, so processors charge more:
+
+| Gateway | Spanish card | EU card | UK / non-EEA card |
+|---|---|---|---|
+| Stripe | 1.5% + €0.25 | 1.5% + €0.25 | **3.0% + €0.25** (+1.5% international surcharge) |
+| Redsys | ~0.7% + €0.10 | ~0.7% + €0.10 | ~1.5–2.0% (bank-negotiated) |
+| MONEI | 0.45% | 1.65% | **2.95%** |
+
+On a €36 transaction with a UK card:
+- Stripe: ~**€1.33**
+- MONEI: ~**€1.06**
+
+**Cannot surcharge UK members**: EU PSD2 prohibits merchants in Spain from adding a surcharge for any card payment regardless of origin. British community members cannot legally be charged a higher price. The fee difference is absorbed by the community — at this scale (~few British members) it is negligible.
 
 ---
 
@@ -17,10 +37,14 @@
 |---|---|
 | Setup | €0 |
 | Monthly fee | €0 |
-| Per transaction | 1.5% + €0.25 (domestic EEA cards) |
-| On avg €36 transaction | €0.79 |
-| Season total (~133 tx) | **~€105** |
+| Per transaction (EEA cards) | 1.5% + €0.25 |
+| Per transaction (UK / non-EEA) | 3.0% + €0.25 |
+| On avg €36 transaction (Spanish) | €0.79 |
+| On avg €36 transaction (UK) | €1.33 |
+| Season total — all Spanish cards | ~€105 |
+| Season total — mixed incl. some UK | ~€110 |
 | Integration complexity | Low — REST API, official SDK, native Cloudflare Workers support |
+| **Sandbox / test environment** | **Excellent** — instant test mode toggle in dashboard, unlimited test API keys (`sk_test_...`), full suite of test card numbers, webhook testing via Stripe CLI, no time limit |
 
 **UX**
 
@@ -42,12 +66,12 @@
 |---|---|
 | Setup | ~€150 one-time (likely waived — existing contract) |
 | Monthly fee | ~€20/month if monthly billing exceeds €300 |
-| Per transaction | ~0.5–1.0% + €0.05–0.15 (bank-negotiated; use ~0.7% as estimate) |
-| On avg €36 transaction | ~€0.35 |
-| Season transaction fees | ~€47 |
-| Monthly fee (3 active months) | €60 — or €0 if already a sunk cost |
-| Season total | **€47–€107** |
+| Per transaction (Spanish cards) | ~0.5–1.0% + €0.05–0.15 (bank-negotiated; ~0.7% estimate) |
+| Per transaction (UK / non-EEA) | ~1.5–2.0% (bank-negotiated international rate) |
+| On avg €36 transaction (Spanish) | ~€0.35 |
+| Season transaction fees | ~€47–€107 |
 | Integration complexity | High — HMAC-SHA256 parameter signing, Redsys redirect flow, 3DS redirect |
+| **Sandbox / test environment** | **Poor** — test account must be manually created, expires after **7 days**, separate test portal URL, test cards provided but limited; no CLI tooling |
 
 **UX**
 
@@ -73,10 +97,13 @@ Spanish-founded payment gateway, specifically optimised for the Spanish market. 
 | Monthly fee | €0 |
 | Per transaction (national Spanish cards) | 0.45% |
 | Per transaction (EU international cards) | 1.65% |
-| On avg €36 transaction (national) | **~€0.16** |
-| Season total — national cards (~133 tx) | **~€22** |
-| Season total — mixed cards (est. 80% national) | **~€30** |
-| Integration complexity | Medium — REST API, less mature SDK than Stripe |
+| Per transaction (UK / non-EEA cards) | 2.95% |
+| On avg €36 transaction (Spanish) | ~€0.16 |
+| On avg €36 transaction (UK) | ~€1.06 |
+| Season total — all Spanish cards | ~€22 |
+| Season total — mixed incl. some UK | ~€30 |
+| Integration complexity | Medium — REST API, Node.js SDK available, less mature than Stripe |
+| **Sandbox / test environment** | **Good** — test mode toggle in dashboard, separate test API keys (`pk_test_...`), test card numbers with fixed expiry (12/34), test webhooks supported; no time limit |
 
 **UX**
 
@@ -90,17 +117,16 @@ Spanish-founded payment gateway, specifically optimised for the Spanish market. 
 | 3DS handling | Inline modal (3DS 2.0) |
 | Saved cards | Not supported in v1 |
 
-**Why MONEI is relevant here**: almost all ~55 community members will hold Spanish bank cards, meaning virtually every transaction hits the 0.45% national rate — roughly 3× cheaper than Stripe per transaction.
-
 ---
 
 ## Summary comparison
 
 | | Stripe | Redsys | MONEI |
 |---|---|---|---|
-| **Season cost — best case** | ~€105 | ~€47 (monthly fee sunk) | **~€22** |
-| **Season cost — worst case** | ~€105 | ~€107 | **~€30** |
-| **Cost per transaction (avg €36)** | €0.79 | €0.35–€0.50 | **€0.16** |
+| **Season cost — Spanish cards only** | ~€105 | ~€47–€107 | **~€22** |
+| **Season cost — mixed incl. UK** | ~€110 | ~€55–€115 | **~€30** |
+| **Cost per tx — Spanish card (€36)** | €0.79 | €0.35–€0.50 | **€0.16** |
+| **Cost per tx — UK card (€36)** | €1.33 | ~€0.65 | €1.06 |
 | **Setup cost** | €0 | €0–€150 | €0 |
 | **Monthly fee** | €0 | €0–€20 | €0 |
 | **Integration effort** | ~1–2 days | ~4–6 days | ~2–3 days |
@@ -109,23 +135,26 @@ Spanish-founded payment gateway, specifically optimised for the Spanish market. 
 | **Bizum (Spain)** | No | No | **Yes** |
 | **3DS UX** | Inline modal | Full redirect | Inline modal |
 | **SDK / docs quality** | Excellent | Poor | Adequate |
+| **Sandbox / test environment** | **Excellent** | Poor (7-day expiry) | **Good** |
 | **Existing contract** | No | Yes (Federico) | No |
-| **Spain-optimised** | No | Yes (Redsys is Spanish) | **Yes** |
+| **Spain-optimised** | No | Yes | **Yes** |
+| **Non-EEA (UK) card support** | Yes, at higher rate | Yes, at higher rate | Yes, at higher rate |
+| **Can surcharge non-EEA members** | No (illegal in ES) | No (illegal in ES) | No (illegal in ES) |
 | **Abandonment risk** | Low | High | Low |
 
 ---
 
 ## Recommendation for Federico
 
-**MONEI** offers the best combination of cost and UX for this specific deployment:
-- At 0.45% for national cards, it is ~5× cheaper than Stripe per transaction (~€22 vs ~€105/season)
-- It supports Apple Pay, Google Pay, and **Bizum** — the latter being the most widely used mobile payment method among Spanish consumers
-- Modern inline checkout comparable in quality to Stripe
-- No monthly fee, no setup cost
+**MONEI** remains the best fit:
+- Cheapest for the majority of transactions (0.45% for Spanish cards)
+- British members cost slightly more to process (~€1.06 per €36 tx) — comparable to Stripe and unavoidable under EU law
+- Good test/sandbox environment for development
+- Bizum support, modern checkout UX, no monthly fees
 
-The only trade-off versus Stripe is a less mature developer ecosystem — MONEI's documentation and SDK are adequate but not as polished. For the narrow integration surface this project needs (one product, one checkout flow, one webhook), this is an acceptable trade-off.
+**Stripe** is the best choice if developer experience is the priority — its sandbox tooling (Stripe CLI, instant test mode, webhook replay) is significantly better than MONEI's and will save development time, particularly for testing the payment→voucher→email flow end-to-end.
 
-**If Federico insists on Caja Rural**: the Redsys integration is feasible but adds ~3–4 extra developer days and delivers a significantly worse checkout experience.
+**Redsys** sandbox is the weakest — 7-day test accounts are a material obstacle for iterative development and future maintenance.
 
 **Decision required from Federico before build begins.**
 
@@ -156,4 +185,4 @@ Reference: [Redsys integration notes](https://github.com/anibalsanchez/Notas-Int
 4. Worker verifies webhook signature, creates purchase record, generates voucher, sends emails
 5. User redirected to `/confirmacion?code=ACE-...`
 
-Reference: [MONEI API docs](https://docs.monei.com)
+Reference: [MONEI API docs](https://docs.monei.com) · [MONEI test mode](https://docs.monei.com/testing/)
