@@ -125,8 +125,10 @@ Spanish-founded payment gateway, specifically optimised for the Spanish market. 
 |---|---|---|---|
 | **Season cost — Spanish cards only** | ~€105 | ~€47–€107 | **~€22** |
 | **Season cost — mixed incl. UK** | ~€110 | ~€55–€115 | **~€30** |
-| **Cost per tx — Spanish card (€36)** | €0.79 | €0.35–€0.50 | **€0.16** |
-| **Cost per tx — UK card (€36)** | €1.33 | ~€0.65 | €1.06 |
+| **Gateway fee on a €36 purchase (Spanish card)** — what the gateway keeps | €0.79 | €0.35–€0.50 | **€0.16** |
+| **Gateway fee on a €36 purchase (UK card)** — what the gateway keeps | €1.33 | ~€0.65 | €1.06 |
+| **Community receives per €36 purchase (Spanish card)** | €35.21 | €35.50–€35.65 | **€35.84** |
+| **Community receives per €36 purchase (UK card)** | €34.67 | ~€35.35 | €34.94 |
 | **Setup cost** | €0 | €0–€150 | €0 |
 | **Monthly fee** | €0 | €0–€20 | €0 |
 | **Integration effort** | ~1–2 days | ~4–6 days | ~2–3 days |
