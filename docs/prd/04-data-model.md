@@ -11,7 +11,7 @@ CREATE TABLE users (
   email         TEXT,
   phone         TEXT,                     -- used for WhatsApp notifications
   password_hash TEXT    NOT NULL,         -- bcrypt, cost factor 12
-  role          TEXT    NOT NULL DEFAULT 'member', -- 'member' | 'admin'
+  role          TEXT    NOT NULL DEFAULT 'member', -- 'member' | 'admin' | 'operator'
   active        INTEGER NOT NULL DEFAULT 1,
   created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -78,6 +78,8 @@ WHERE u.active = 1
 GROUP BY u.id
 ORDER BY u.community_no;
 ```
+
+**Season-end handling**: both `purchases` and `usage_entries` carry a `season_id` foreign key. Filtering by `season_id = :season_id` in the query above automatically scopes the balance to that season — no data migration is needed when a season closes. Historical balances for past seasons remain queryable by passing the old `season_id`.
 
 ---
 

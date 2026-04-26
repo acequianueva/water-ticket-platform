@@ -27,28 +27,33 @@ All templates must include:
 
 ## WhatsApp
 
-### v1 — wa.me deep links (no API required)
+### v1 — Member voucher sharing (wa.me deep links, no API required)
 
-On the voucher screen, the "Enviar por WhatsApp" button opens:
+On the voucher screen, the "Share via WhatsApp" button opens:
 
 ```
-https://wa.me/?text=Hola%20Francis%2C%20soy%20[name]%20(nº%20[community_no]).%0AMi%20código%20de%20reserva%3A%20ACE-XXXXXX%0AHoras%3A%20X
+https://wa.me/?text=Hello%20Francis%2C%20this%20is%20[name]%20(no.%20[community_no]).%0AMy%20voucher%20code%3A%20ACE-XXXXXX%0AHours%3A%20X
 ```
 
 This opens WhatsApp with a pre-filled message. The member sends it to Francis (or saves it for reference). No WhatsApp Business API account required.
 
-Goiatz can also forward the Wednesday weekly report email to Francis via WhatsApp manually in v1.
+### v1 — Weekly report to Francis via WhatsApp (automated)
 
-### v1.5 — Automated WhatsApp notifications (deferred)
+The Wednesday 9pm cron also sends the open-hours list to Francis's WhatsApp number via the WhatsApp Business API (Meta Cloud API). This is a v1 requirement (US-07) — Francis must receive the report via WhatsApp, not only email.
 
-When there is capacity to set up WhatsApp Business API (Meta Cloud API):
+- Worker calls Meta Cloud API REST endpoint after sending the email
+- Message: the same plain-text report table sent in the email
+- Meta Cloud API free tier: 1,000 user-initiated conversations/month — sufficient for this scale
+- Requires a verified WhatsApp Business account and phone number set up before v1 launch
 
-- Balance-update notification after Goiatz records usage: "Hola [name], se han registrado X horas. Te quedan Y horas esta temporada."
-- Meta Cloud API free tier: 1,000 user-initiated conversations/month — sufficient for this scale.
-- Requires a verified WhatsApp Business account and phone number.
+### v1.5 — Automated balance-update notifications (deferred)
+
+When there is capacity for broader WhatsApp notifications:
+
+- Balance-update notification after usage is recorded: "Hello [name], X hours have been recorded. You have Y hours remaining this season."
 - Users must have opted in (phone number stored in `users.phone`).
 
-Defer to v1.5 to avoid blocking the v1 build on Meta account verification.
+Deferred to v1.5 to limit WhatsApp API scope at launch — only the weekly report to Francis requires v1 API setup.
 
 ---
 
@@ -61,5 +66,5 @@ Defer to v1.5 to avoid blocking the v1 build on Meta account verification.
 | Usage update email to member | Yes | Yes |
 | Weekly report email to Francis + Goiatz | Yes | Yes |
 | Welcome email to new user | Yes | Yes |
+| Weekly report WhatsApp to Francis (automated) | Yes | Yes |
 | Balance update WhatsApp to member | No | Yes |
-| Weekly report WhatsApp to Francis (automated) | No | Yes |

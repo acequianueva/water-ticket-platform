@@ -2,7 +2,7 @@
 
 ## Cost model — assumptions
 
-- ~400 hours sold per season ("several hundreds" stated by community head)
+- ~400 hours sold per season
 - Price per hour: €12
 - Average purchase: 3 hours × €12 = €36
 - Estimated transactions per season: ~133
@@ -25,6 +25,7 @@ Post-Brexit, UK-issued cards are treated as **international non-EEA** by all pro
 
 On a €36 transaction with a UK card:
 - Stripe: ~**€1.33**
+- Redsys: ~**€0.65** (bank-negotiated; cheaper but adds full-page redirect friction)
 - MONEI: ~**€1.06**
 
 **Cannot surcharge UK members**: EU PSD2 prohibits merchants in Spain from adding a surcharge for any card payment regardless of origin. British community members cannot legally be charged a higher price. The fee difference is absorbed by the community — at this scale (~few British members) it is negligible.
