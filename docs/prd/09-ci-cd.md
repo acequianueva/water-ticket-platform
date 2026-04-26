@@ -115,8 +115,8 @@ wrangler secret put STRIPE_SECRET_KEY --env production      # production
 push to PR branch
   └── GitHub Actions: qa.yml
         ├── npm ci
-        ├── npx tsc --noEmit          (type check)
-        ├── npx eslint src            (lint)
+        ├── npx tsgo --noEmit         (type check)
+        ├── npx oxlint src            (lint)
         └── npx vitest run            (unit tests)
               │
               ├── PASS → Cloudflare Pages creates preview URL automatically
@@ -135,8 +135,8 @@ The Worker backend is **not** separately deployed for PRs — the preview fronte
 merge to main
   └── GitHub Actions: deploy.yml
         ├── npm ci
-        ├── npx tsc --noEmit
-        ├── npx eslint src
+        ├── npx tsgo --noEmit
+        ├── npx oxlint src
         ├── npx vitest run
         │     │
         │     └── FAIL → deploy aborted, alert developer
@@ -171,8 +171,8 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 20, cache: npm }
       - run: npm ci
-      - run: npx tsc --noEmit
-      - run: npx eslint src
+      - run: npx tsgo --noEmit
+      - run: npx oxlint src
       - run: npx vitest run
 ```
 
@@ -192,8 +192,8 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 20, cache: npm }
       - run: npm ci
-      - run: npx tsc --noEmit
-      - run: npx eslint src
+      - run: npx tsgo --noEmit
+      - run: npx oxlint src
       - run: npx vitest run
       - name: Deploy Worker
         uses: cloudflare/wrangler-action@v3
@@ -217,8 +217,8 @@ GitHub repository secrets required: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_
 
 | Check | Tool | Blocks deploy? |
 |---|---|---|
-| Type safety | `tsc --noEmit` | Yes |
-| Lint | ESLint | Yes |
+| Type safety | `tsgo --noEmit` (OXC) | Yes |
+| Lint | Oxlint (OXC) | Yes |
 | Unit tests | Vitest | Yes |
 | Integration tests (future) | Vitest + Miniflare | Yes |
 | E2E tests (future) | Playwright | Optional |

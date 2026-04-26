@@ -53,12 +53,13 @@ Vite is the build tool and dev server for the frontend. The full toolset it brin
 
 | Tool | Role |
 |---|---|
-| **Vite** | Build tool, dev server with HMR, bundles for Cloudflare Pages |
-| **@vitejs/plugin-react-swc** | React fast refresh via SWC (faster than Babel) |
+| **Vite** | Dev server with HMR, orchestrates the toolchain |
+| **Rolldown** | Production bundler — Rust-based replacement for Rollup/esbuild, ships as part of Vite+ |
+| **OXC (Oxlint + Oxfmt)** | Linting and formatting — Rust-based, ESLint/Prettier-compatible, order-of-magnitude faster |
 | **Vitest** | Unit and integration testing — same config as Vite, no Jest setup needed |
+| **tsgo** | Type checking — faster TypeScript checker, replaces `tsc --noEmit` in CI |
 | **vite-plugin-cloudflare** | Runs the Hono Worker locally inside Vite's dev server via Miniflare — single `vite dev` command runs the full stack |
-| **TypeScript** | Via Vite's native TS support — no separate `tsc` watch needed in dev |
-| **ESLint** | Linting, wired into Vite dev server for instant feedback |
+| **@vitejs/plugin-react** | React fast refresh |
 
 ### Why this matters
 
@@ -76,8 +77,9 @@ Vite is the build tool and dev server for the frontend. The full toolset it brin
     "dev":       "vite dev",
     "build":     "vite build",
     "preview":   "vite preview",
-    "typecheck": "tsc --noEmit",
-    "lint":      "eslint src",
+    "typecheck": "tsgo --noEmit",
+    "lint":      "oxlint src",
+    "format":    "oxfmt src",
     "test":      "vitest run",
     "test:watch": "vitest"
   }
