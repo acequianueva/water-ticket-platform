@@ -47,6 +47,45 @@ All free tiers are orders of magnitude above what ~55 users with seasonal traffi
 
 ---
 
+## Vite toolset
+
+Vite is the build tool and dev server for the frontend. The full toolset it brings:
+
+| Tool | Role |
+|---|---|
+| **Vite** | Build tool, dev server with HMR, bundles for Cloudflare Pages |
+| **@vitejs/plugin-react-swc** | React fast refresh via SWC (faster than Babel) |
+| **Vitest** | Unit and integration testing — same config as Vite, no Jest setup needed |
+| **vite-plugin-cloudflare** | Runs the Hono Worker locally inside Vite's dev server via Miniflare — single `vite dev` command runs the full stack |
+| **TypeScript** | Via Vite's native TS support — no separate `tsc` watch needed in dev |
+| **ESLint** | Linting, wired into Vite dev server for instant feedback |
+
+### Why this matters
+
+`vite-plugin-cloudflare` is the key piece: it embeds the Worker runtime (Miniflare) directly into Vite's dev server. This means:
+- One command (`vite dev`) starts frontend + backend + D1 + KV locally
+- No separate `wrangler dev` process to manage
+- Hot module replacement on frontend changes; Worker reloads on backend changes
+- The same Vitest runner used in CI runs locally with identical Cloudflare bindings
+
+### Scripts (package.json)
+
+```json
+{
+  "scripts": {
+    "dev":       "vite dev",
+    "build":     "vite build",
+    "preview":   "vite preview",
+    "typecheck": "tsc --noEmit",
+    "lint":      "eslint src",
+    "test":      "vitest run",
+    "test:watch": "vitest"
+  }
+}
+```
+
+---
+
 ## Why not an off-the-shelf SaaS?
 
 **Shopify**
