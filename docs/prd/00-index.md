@@ -22,7 +22,7 @@ Built generically so any irrigation community can deploy their own instance.
 
 ## Open decisions (Federico must sign off before build)
 
-- [ ] **Payment gateway**: Stripe vs Caja Rural TPV Virtual (Redsys). See [02-payments.md](./02-payments.md) for full cost and UX comparison.
+- [ ] **Payment gateway**: Stripe vs MONEI vs Caja Rural TPV Virtual (Redsys). See [02-payments.md](./02-payments.md) for full cost and UX comparison.
 - [ ] **Subdomain**: `tienda.acequianueva.com` or `compra.acequianueva.com`?
 - [ ] **Acequia notification email**: confirm the address that receives a copy of every purchase.
 - [ ] **Season dates**: confirm start and end dates for the first season to be loaded.
