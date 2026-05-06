@@ -5,6 +5,10 @@ compatibility_flags  = ["nodejs_compat"]
 
 # ── Staging (default) ─────────────────────────────────────────────────────────
 
+[vars]
+REDSYS_MERCHANT_CODE = ""   # fill in: Caja Rural test merchant code
+REDSYS_TERMINAL      = "1"
+
 [[d1_databases]]
 binding       = "DB"
 database_name = "water-ticket-staging"
@@ -29,6 +33,10 @@ crons = ["0 19 * * 3"]  # Wednesday 21:00 Spain (UTC+2 summer)
 
 [env.production]
 name = "water-ticket-worker-production"
+
+[env.production.vars]
+REDSYS_MERCHANT_CODE = ""   # fill in: Caja Rural live merchant code
+REDSYS_TERMINAL      = "1"
 
 [[env.production.d1_databases]]
 binding       = "DB"
