@@ -18,6 +18,9 @@ id      = "88c87fff528d43c091262a2b1481f3e7"
 binding     = "VOUCHERS"
 bucket_name = "vouchers-staging"
 
+[assets]
+directory = "dist/client"
+
 [triggers]
 crons = ["0 19 * * 3"]  # Wednesday 21:00 Spain (UTC+2 summer)
 
