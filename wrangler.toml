@@ -1,4 +1,4 @@
-name = "water-ticket-worker-production"
+name = "water-ticket-platform"
 main               = "src/worker/index.ts"
 compatibility_date = "2025-01-01"
 
