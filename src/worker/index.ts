@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
-import { buildMerchantParams, generateOrderId, sign, TPV_URL, verifyAndDecode } from './redsys'
+import { buildMerchantParams, generateOrderId, sign, SIGNATURE_VERSION, TPV_URL, verifyAndDecode } from './redsys'
 
 export const app = new Hono<{ Bindings: Env }>()
 
@@ -13,7 +13,7 @@ app.get('/api/hello', (c) => {
 // ── Payment initiation ────────────────────────────────────────────────────────
 
 app.post('/api/pay', async (c) => {
-  const secretKey = c.env['REDSYS_SECRET_KEY-SHA_256']
+  const secretKey = c.env['REDSYS_SECRET_KEY-SHA_512']
 
   // Verify secrets are present on first use — logs appear in `wrangler tail`
   console.log(JSON.stringify({
@@ -25,7 +25,7 @@ app.post('/api/pay', async (c) => {
   }))
 
   if (!secretKey) {
-    console.error('pay.error: REDSYS_SECRET_KEY-SHA_256 is not set')
+    console.error('pay.error: REDSYS_SECRET_KEY-SHA_512 is not set')
     return c.json({ error: 'Payment gateway not configured' }, 503)
   }
 
@@ -67,7 +67,7 @@ app.post('/api/pay', async (c) => {
     notify_url: paramsObj.DS_MERCHANT_MERCHANTURL,
   }))
 
-  return c.json({ Ds_MerchantParameters, Ds_SignatureVersion: 'HMAC_SHA256_V1', Ds_Signature, tpvUrl: TPV_URL, order })
+  return c.json({ Ds_MerchantParameters, Ds_SignatureVersion: SIGNATURE_VERSION, Ds_Signature, tpvUrl: TPV_URL, order })
 })
 
 // ── Redsys server-to-server notification ─────────────────────────────────────
@@ -84,12 +84,12 @@ app.post('/api/redsys/notify', async (c) => {
     caller_ip: c.req.header('cf-connecting-ip') ?? 'unknown',
   }))
 
-  if (Ds_SignatureVersion !== 'HMAC_SHA256_V1' || !Ds_MerchantParameters || !Ds_Signature) {
+  if (Ds_SignatureVersion !== SIGNATURE_VERSION || !Ds_MerchantParameters || !Ds_Signature) {
     console.error(JSON.stringify({ event: 'notify.rejected', reason: 'missing_fields' }))
     return c.text('Bad request', 400)
   }
 
-  const { params, valid } = verifyAndDecode(c.env['REDSYS_SECRET_KEY-SHA_256'], Ds_MerchantParameters, Ds_Signature)
+  const { params, valid } = verifyAndDecode(c.env['REDSYS_SECRET_KEY-SHA_512'], Ds_MerchantParameters, Ds_Signature)
 
   if (!valid) {
     console.error(JSON.stringify({ event: 'notify.rejected', reason: 'invalid_signature' }))

@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { app } from './index'
 import { buildMerchantParams, sign } from './redsys'
 
-// 'abcdefghijklmnopqrstuvwx' base64-encoded → valid 24-byte 3DES key
-const TEST_KEY = 'YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4'
+// HMAC_SHA512_V2: key used as raw string, first 16 chars become the AES-128 key
+const TEST_KEY = 'sq7HjrUOBfKmC576ILgskD5srU870gJ7' // Redsys public test key
 
 type Purchase = {
   user_id: number; season_id: number; hours: number
@@ -48,7 +48,7 @@ function makeEnv(seedPurchases: Purchase[] = []) {
   return {
     DB, SESSIONS, VOUCHERS: {},
     'REDSYS_SECRET_KEY-SHA_256': TEST_KEY,
-    'REDSYS_SECRET_KEY-SHA_512': TEST_KEY,
+    'REDSYS_SECRET_KEY-SHA_512': TEST_KEY, // V2 uses this one
     REDSYS_MERCHANT_CODE: '999008881',
     REDSYS_TERMINAL: '1',
     RESEND_API_KEY: 'test',
@@ -104,7 +104,7 @@ describe('POST /api/pay', () => {
     )
     expect(res.status).toBe(200)
     const body = (await res.json()) as Record<string, string>
-    expect(body.Ds_SignatureVersion).toBe('HMAC_SHA256_V1')
+    expect(body.Ds_SignatureVersion).toBe('HMAC_SHA512_V2')
     expect(body.Ds_MerchantParameters).toBeTruthy()
     expect(body.Ds_Signature).toBeTruthy()
     expect(body.order).toMatch(/^\d{8}[A-Z0-9]{4}$/)
@@ -142,7 +142,7 @@ function notifyBody(params: Record<string, string>, key: string, order: string) 
   const Ds_MerchantParameters = buildMerchantParams(params)
   const Ds_Signature = sign(key, order, Ds_MerchantParameters)
   return new URLSearchParams({
-    Ds_SignatureVersion: 'HMAC_SHA256_V1',
+    Ds_SignatureVersion: 'HMAC_SHA512_V2',
     Ds_MerchantParameters,
     Ds_Signature,
   }).toString()
@@ -155,7 +155,7 @@ describe('POST /api/redsys/notify', () => {
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: 'Ds_SignatureVersion=HMAC_SHA256_V1',
+        body: 'Ds_SignatureVersion=HMAC_SHA512_V2',
       },
       makeEnv(),
     )
@@ -170,7 +170,7 @@ describe('POST /api/redsys/notify', () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
-          Ds_SignatureVersion: 'HMAC_SHA256_V1',
+          Ds_SignatureVersion: 'HMAC_SHA512_V2',
           Ds_MerchantParameters: params,
           Ds_Signature: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==',
         }).toString(),

@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { buildMerchantParams, generateOrderId, sign, verifyAndDecode } from './redsys'
 
-// 'abcdefghijklmnopqrstuvwx' base64-encoded → 24-byte key, valid for 3DES
-const TEST_KEY = 'YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4'
+// HMAC_SHA512_V2: key is used as a raw string, first 16 chars become the AES key.
+// Using the publicly documented Redsys test key.
+const TEST_KEY = 'sq7HjrUOBfKmC576ILgskD5srU870gJ7'
 const TEST_ORDER = '20260506ABCD'
 
 describe('generateOrderId', () => {
@@ -21,19 +22,24 @@ describe('generateOrderId', () => {
 })
 
 describe('buildMerchantParams', () => {
-  it('round-trips through base64 JSON', () => {
+  it('round-trips through base64url JSON', () => {
     const params = { DS_MERCHANT_AMOUNT: '3600', DS_MERCHANT_ORDER: TEST_ORDER }
     const encoded = buildMerchantParams(params)
-    expect(JSON.parse(atob(encoded))).toEqual(params)
+    // base64url has no +, /, or = characters
+    expect(encoded).not.toMatch(/[+/=]/)
+    // round-trip: restore padding and decode
+    const padded = encoded + '=='.substring(0, (4 - (encoded.length % 4)) % 4)
+    expect(JSON.parse(Buffer.from(padded, 'base64').toString())).toEqual(params)
   })
 })
 
 describe('sign', () => {
-  it('produces a non-empty base64 string', () => {
+  it('produces a non-empty base64url string', () => {
     const params = buildMerchantParams({ Ds_Order: TEST_ORDER, Ds_Response: '0000' })
     const sig = sign(TEST_KEY, TEST_ORDER, params)
     expect(sig.length).toBeGreaterThan(20)
-    expect(() => atob(sig)).not.toThrow()
+    // base64url: no +, /, or =
+    expect(sig).not.toMatch(/[+/=]/)
   })
 
   it('produces a different signature for a different order', () => {
@@ -56,11 +62,11 @@ describe('verifyAndDecode', () => {
 
   it('rejects a tampered signature', () => {
     const params = buildMerchantParams({ Ds_Order: TEST_ORDER, Ds_Response: '0000' })
-    const { valid } = verifyAndDecode(TEST_KEY, params, 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=')
+    const { valid } = verifyAndDecode(TEST_KEY, params, 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')
     expect(valid).toBe(false)
   })
 
-  it('rejects invalid base64 params without throwing', () => {
+  it('rejects invalid base64url params without throwing', () => {
     const { valid } = verifyAndDecode(TEST_KEY, '!!!notbase64!!!', 'sig')
     expect(valid).toBe(false)
   })
