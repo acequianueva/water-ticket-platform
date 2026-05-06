@@ -35,7 +35,7 @@ app.post('/api/pay', async (c) => {
   }
 
   const Ds_MerchantParameters = buildMerchantParams(paramsObj)
-  const Ds_Signature = sign(c.env.REDSYS_SECRET_KEY, order, Ds_MerchantParameters)
+  const Ds_Signature = sign(c.env['REDSYS_SECRET_KEY-SHA_256'], order, Ds_MerchantParameters)
 
   // Park the pending order so the notification handler can resolve user + season
   await c.env.SESSIONS.put(
@@ -57,7 +57,7 @@ app.post('/api/redsys/notify', async (c) => {
     return c.text('Bad request', 400)
   }
 
-  const { params, valid } = verifyAndDecode(c.env.REDSYS_SECRET_KEY, Ds_MerchantParameters, Ds_Signature)
+  const { params, valid } = verifyAndDecode(c.env['REDSYS_SECRET_KEY-SHA_256'], Ds_MerchantParameters, Ds_Signature)
   if (!valid) {
     console.error('Redsys: invalid signature')
     return c.text('Invalid signature', 400)

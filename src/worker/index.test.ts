@@ -47,7 +47,8 @@ function makeEnv(seedPurchases: Purchase[] = []) {
 
   return {
     DB, SESSIONS, VOUCHERS: {},
-    REDSYS_SECRET_KEY: TEST_KEY,
+    'REDSYS_SECRET_KEY-SHA_256': TEST_KEY,
+    'REDSYS_SECRET_KEY-SHA_512': TEST_KEY,
     REDSYS_MERCHANT_CODE: '999008881',
     REDSYS_TERMINAL: '1',
     RESEND_API_KEY: 'test',
