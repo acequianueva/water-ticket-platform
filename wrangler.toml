@@ -1,8 +1,13 @@
-name = "water-ticket-worker-production"
+name = "water-vouchers-staging"
 main               = "src/worker/index.ts"
 compatibility_date = "2025-01-01"
+compatibility_flags  = ["nodejs_compat"]
 
 # ── Staging (default) ─────────────────────────────────────────────────────────
+
+[vars]
+REDSYS_MERCHANT_CODE = "263100000"   # Test merchant code
+REDSYS_TERMINAL      = "69"
 
 [[d1_databases]]
 binding       = "DB"
@@ -27,7 +32,11 @@ crons = ["0 19 * * 3"]  # Wednesday 21:00 Spain (UTC+2 summer)
 # ── Production ────────────────────────────────────────────────────────────────
 
 [env.production]
-name = "water-ticket-worker-production"
+name = "water-vouchers"
+
+[env.production.vars]
+REDSYS_MERCHANT_CODE = ""   # fill in: Caja Rural live merchant code
+REDSYS_TERMINAL      = "1"
 
 [[env.production.d1_databases]]
 binding       = "DB"
