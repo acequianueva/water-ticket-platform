@@ -2,13 +2,35 @@
   "name": "water-ticket-platform",
   "version": "0.1.0",
   "description": "Open-source platform for agricultural water communities to sell and manage water-usage hour vouchers online.",
-  "main": "dist/index.js",
+  "private": true,
+  "type": "module",
   "scripts": {
-    "build": "tsc"
+    "dev": "vite dev",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "lint": "oxlint src",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
-  "dependencies": {},
+  "dependencies": {
+    "hono": "^4.7.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
   "devDependencies": {
-    "typescript": "^6.0.3"
+    "@cloudflare/vite-plugin": "^1.0.0",
+    "@cloudflare/workers-types": "^4.20250101.0",
+    "@testing-library/jest-dom": "^6.6.0",
+    "@testing-library/react": "^16.3.0",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "@vitejs/plugin-react": "^4.4.0",
+    "jsdom": "^26.1.0",
+    "oxlint": "^0.16.0",
+    "typescript": "^6.0.3",
+    "vite": "^6.3.0",
+    "vitest": "^3.1.0"
   },
   "license": "MIT",
   "repository": {

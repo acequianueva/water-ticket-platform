@@ -1,0 +1,44 @@
+name               = "water-ticket-worker"
+main               = "src/worker/index.ts"
+compatibility_date = "2025-01-01"
+
+# ── Staging (default) ─────────────────────────────────────────────────────────
+
+[[d1_databases]]
+binding       = "DB"
+database_name = "water-ticket-staging"
+database_id   = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"
+
+[[kv_namespaces]]
+binding = "SESSIONS"
+id      = "00000000000000000000000000000000"
+
+[[r2_buckets]]
+binding     = "VOUCHERS"
+bucket_name = "vouchers-staging"
+
+[triggers]
+crons = ["0 19 * * 3"]  # Wednesday 21:00 Spain (UTC+2 summer)
+
+# ── Production ────────────────────────────────────────────────────────────────
+
+[env.production]
+name = "water-ticket-worker-production"
+
+[[env.production.d1_databases]]
+binding       = "DB"
+database_name = "water-ticket-production"
+database_id   = "00000000-0000-0000-0000-000000000001"
+migrations_dir = "migrations"
+
+[[env.production.kv_namespaces]]
+binding = "SESSIONS"
+id      = "00000000000000000000000000000001"
+
+[[env.production.r2_buckets]]
+binding     = "VOUCHERS"
+bucket_name = "vouchers-production"
+
+[env.production.triggers]
+crons = ["0 19 * * 3"]

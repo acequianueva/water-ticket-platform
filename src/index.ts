@@ -1,3 +1,3 @@
-// water-ticket-platform — entry point
-// See docs/prd/ for full specification before implementing
-console.log('water-ticket-platform')
+// Entry points:
+//   Worker API  →  src/worker/index.ts  (wrangler.toml: main)
+//   React app   →  src/app/main.tsx     (index.html: script src)

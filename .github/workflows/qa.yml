@@ -1,0 +1,31 @@
+name: QA
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  qa:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - run: npm ci
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npx oxlint src
+
+      - name: Test
+        run: npx vitest run
+
+  # Cloudflare Pages automatically creates a preview deployment for every PR
+  # via the Pages GitHub integration (zero config required).
+  # Preview URL: https://<branch-slug>.water-ticket-platform.pages.dev

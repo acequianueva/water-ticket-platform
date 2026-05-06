@@ -28,3 +28,6 @@ yarn-error.log*
 
 # Cloudflare
 .wrangler/
+
+# Local secrets — copy from .dev.vars.example and fill in
+.dev.vars
