@@ -69,7 +69,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy --env production
+          command: deploy --env production --config wrangler.toml
 
       - name: Apply D1 migrations (production)
         uses: cloudflare/wrangler-action@v3
