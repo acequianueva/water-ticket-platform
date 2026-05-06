@@ -12,7 +12,7 @@ export default function App() {
 
   return (
     <main style={{ fontFamily: 'sans-serif', padding: '2rem' }}>
-      <h1>Acequia Nueva</h1>
+      <h1>Acequia Nueva Pozo Site</h1>
       <p data-testid="greeting">{message ?? 'Cargando...'}</p>
     </main>
   )
