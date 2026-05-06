@@ -7,12 +7,12 @@ compatibility_date = "2025-01-01"
 [[d1_databases]]
 binding       = "DB"
 database_name = "water-ticket-staging"
-database_id   = "00000000-0000-0000-0000-000000000000"
+database_id   = "f305a893-388c-4504-a35c-5b4134f9b7c4"
 migrations_dir = "migrations"
 
 [[kv_namespaces]]
 binding = "SESSIONS"
-id      = "00000000000000000000000000000000"
+id      = "88c87fff528d43c091262a2b1481f3e7"
 
 [[r2_buckets]]
 binding     = "VOUCHERS"
@@ -29,12 +29,12 @@ name = "water-ticket-worker-production"
 [[env.production.d1_databases]]
 binding       = "DB"
 database_name = "water-ticket-production"
-database_id   = "00000000-0000-0000-0000-000000000001"
+database_id   = "d13ae87d-b9c1-4965-8bf2-75729f4bcc0b"
 migrations_dir = "migrations"
 
 [[env.production.kv_namespaces]]
 binding = "SESSIONS"
-id      = "00000000000000000000000000000001"
+id      = "265940e3e56042328e869b2ce8634184"
 
 [[env.production.r2_buckets]]
 binding     = "VOUCHERS"
