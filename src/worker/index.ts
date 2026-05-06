@@ -13,6 +13,22 @@ app.get('/api/hello', (c) => {
 // ── Payment initiation ────────────────────────────────────────────────────────
 
 app.post('/api/pay', async (c) => {
+  const secretKey = c.env['REDSYS_SECRET_KEY-SHA_256']
+
+  // Verify secrets are present on first use — logs appear in `wrangler tail`
+  console.log(JSON.stringify({
+    event: 'pay.init',
+    merchant_code: c.env.REDSYS_MERCHANT_CODE || '(missing)',
+    terminal: c.env.REDSYS_TERMINAL || '(missing)',
+    secret_key_present: !!secretKey,
+    tpv_url: TPV_URL,
+  }))
+
+  if (!secretKey) {
+    console.error('pay.error: REDSYS_SECRET_KEY-SHA_256 is not set')
+    return c.json({ error: 'Payment gateway not configured' }, 503)
+  }
+
   const { hours } = await c.req.json<{ hours: number }>()
   if (!hours || hours < 1 || hours > 10) {
     return c.json({ error: 'hours must be between 1 and 10' }, 400)
@@ -35,14 +51,21 @@ app.post('/api/pay', async (c) => {
   }
 
   const Ds_MerchantParameters = buildMerchantParams(paramsObj)
-  const Ds_Signature = sign(c.env['REDSYS_SECRET_KEY-SHA_256'], order, Ds_MerchantParameters)
+  const Ds_Signature = sign(secretKey, order, Ds_MerchantParameters)
 
-  // Park the pending order so the notification handler can resolve user + season
   await c.env.SESSIONS.put(
     `redsys:order:${order}`,
     JSON.stringify({ userId: 1, seasonId: 1, hours, amountEur: hours * 12 }),
     { expirationTtl: 3600 },
   )
+
+  console.log(JSON.stringify({
+    event: 'pay.created',
+    order,
+    hours,
+    amount_eur: hours * 12,
+    notify_url: paramsObj.DS_MERCHANT_MERCHANTURL,
+  }))
 
   return c.json({ Ds_MerchantParameters, Ds_SignatureVersion: 'HMAC_SHA256_V1', Ds_Signature, tpvUrl: TPV_URL, order })
 })
@@ -53,32 +76,53 @@ app.post('/api/redsys/notify', async (c) => {
   const body = await c.req.parseBody()
   const { Ds_MerchantParameters, Ds_Signature, Ds_SignatureVersion } = body as Record<string, string>
 
+  console.log(JSON.stringify({
+    event: 'notify.received',
+    signature_version: Ds_SignatureVersion ?? '(missing)',
+    has_params: !!Ds_MerchantParameters,
+    has_signature: !!Ds_Signature,
+    caller_ip: c.req.header('cf-connecting-ip') ?? 'unknown',
+  }))
+
   if (Ds_SignatureVersion !== 'HMAC_SHA256_V1' || !Ds_MerchantParameters || !Ds_Signature) {
+    console.error(JSON.stringify({ event: 'notify.rejected', reason: 'missing_fields' }))
     return c.text('Bad request', 400)
   }
 
   const { params, valid } = verifyAndDecode(c.env['REDSYS_SECRET_KEY-SHA_256'], Ds_MerchantParameters, Ds_Signature)
+
   if (!valid) {
-    console.error('Redsys: invalid signature')
+    console.error(JSON.stringify({ event: 'notify.rejected', reason: 'invalid_signature' }))
     return c.text('Invalid signature', 400)
   }
 
   const order = params.Ds_Order
   const responseCode = parseInt(params.Ds_Response ?? '9999', 10)
 
-  // 0000–0099 = approved; everything else = declined / error
+  console.log(JSON.stringify({
+    event: 'notify.parsed',
+    order,
+    response_code: params.Ds_Response,
+    approved: responseCode >= 0 && responseCode <= 99,
+    auth_code: params.Ds_AuthorisationCode ?? null,
+    secure_payment: params.Ds_SecurePayment ?? null,
+    card_country: params.Ds_Card_Country ?? null,
+  }))
+
   if (responseCode < 0 || responseCode > 99) {
-    console.log(`Redsys: declined order=${order} code=${params.Ds_Response}`)
+    console.log(JSON.stringify({ event: 'notify.declined', order, response_code: params.Ds_Response }))
     return c.text('OK', 200)
   }
 
-  // Idempotency: skip if we already recorded this order
   const existing = await c.env.DB.prepare('SELECT id FROM purchases WHERE payment_ref = ?').bind(order).first()
-  if (existing) return c.text('OK', 200)
+  if (existing) {
+    console.log(JSON.stringify({ event: 'notify.duplicate', order }))
+    return c.text('OK', 200)
+  }
 
   const pendingRaw = await c.env.SESSIONS.get(`redsys:order:${order}`)
   if (!pendingRaw) {
-    console.error(`Redsys: no pending order in KV for ${order}`)
+    console.error(JSON.stringify({ event: 'notify.error', reason: 'no_pending_order_in_kv', order }))
     return c.text('OK', 200)
   }
 
@@ -95,6 +139,15 @@ app.post('/api/redsys/notify', async (c) => {
   ).bind(userId, seasonId, hours, amountEur, order, voucherCode).run()
 
   await c.env.SESSIONS.delete(`redsys:order:${order}`)
+
+  console.log(JSON.stringify({
+    event: 'notify.purchase_created',
+    order,
+    user_id: userId,
+    hours,
+    amount_eur: amountEur,
+    voucher_code: voucherCode,
+  }))
 
   return c.text('OK', 200)
 })
