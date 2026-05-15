@@ -8,6 +8,7 @@ compatibility_flags  = ["nodejs_compat"]
 [vars]
 REDSYS_MERCHANT_CODE = "263100000"   # Test merchant code
 REDSYS_TERMINAL      = "69"
+PURCHASES_ENABLED    = "true"        # Set to "false" in Cloudflare dashboard to disable purchases
 
 [[d1_databases]]
 binding       = "DB"
@@ -37,6 +38,7 @@ name = "water-vouchers"
 [env.production.vars]
 REDSYS_MERCHANT_CODE = ""   # fill in: Caja Rural live merchant code
 REDSYS_TERMINAL      = "1"
+PURCHASES_ENABLED    = "true"        # Set to "false" in Cloudflare dashboard to disable purchases
 
 [[env.production.d1_databases]]
 binding       = "DB"

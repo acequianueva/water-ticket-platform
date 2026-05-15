@@ -2,8 +2,11 @@ import { describe, expect, it } from 'vitest'
 import { app } from './index'
 import { buildMerchantParams, sign } from './redsys'
 
-// HMAC_SHA512_V2: key used as raw string, first 16 chars become the AES-128 key
-const TEST_KEY = 'sq7HjrUOBfKmC576ILgskD5srU870gJ7' // Redsys public test key
+// HMAC_SHA512_V2: merchant key is used raw; first 16 chars become the AES-128 key.
+const TEST_KEY = 'sq7HjrUOBfKmC576ILgskD5srU870gJ7' // standard Redsys test key
+
+// Hono reads executionCtx from the 4th argument to app.request, not from env
+const mockCtx = { waitUntil: (_p: Promise<unknown>) => void 0, passThroughOnException: () => void 0 }
 
 type Purchase = {
   user_id: number; season_id: number; hours: number
@@ -47,12 +50,13 @@ function makeEnv(seedPurchases: Purchase[] = []) {
 
   return {
     DB, SESSIONS, VOUCHERS: {},
+    'REDSYS_SECRET_KEY-SHA_512': TEST_KEY,
     'REDSYS_SECRET_KEY-SHA_256': TEST_KEY,
-    'REDSYS_SECRET_KEY-SHA_512': TEST_KEY, // V2 uses this one
     REDSYS_MERCHANT_CODE: '999008881',
     REDSYS_TERMINAL: '1',
     RESEND_API_KEY: 'test',
     SESSION_SECRET: 'deadbeef',
+    PURCHASES_ENABLED: 'true',
     purchases, // expose so tests can inspect post-mutation state
   }
 }
@@ -123,6 +127,17 @@ describe('POST /api/pay', () => {
     expect(JSON.parse(stored!).hours).toBe(5)
   })
 
+  it('returns 503 when PURCHASES_ENABLED is not "true"', async () => {
+    const env = makeEnv()
+    env.PURCHASES_ENABLED = 'false'
+    const res = await app.request(
+      'http://localhost/api/pay',
+      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ hours: 3 }) },
+      env,
+    )
+    expect(res.status).toBe(503)
+  })
+
   it('sets amount to hours × 1200 cents', async () => {
     const env = makeEnv()
     const res = await app.request(
@@ -158,6 +173,7 @@ describe('POST /api/redsys/notify', () => {
         body: 'Ds_SignatureVersion=HMAC_SHA512_V2',
       },
       makeEnv(),
+      mockCtx,
     )
     expect(res.status).toBe(400)
   })
@@ -176,6 +192,7 @@ describe('POST /api/redsys/notify', () => {
         }).toString(),
       },
       makeEnv(),
+      mockCtx,
     )
     expect(res.status).toBe(400)
   })
@@ -193,6 +210,7 @@ describe('POST /api/redsys/notify', () => {
         body: notifyBody({ Ds_Order: order, Ds_Response: '0190' }, TEST_KEY, order),
       },
       env,
+      mockCtx,
     )
     expect(res.status).toBe(200)
     expect(env.purchases).toHaveLength(0)
@@ -211,6 +229,7 @@ describe('POST /api/redsys/notify', () => {
         body: notifyBody({ Ds_Order: order, Ds_Response: '0000' }, TEST_KEY, order),
       },
       env,
+      mockCtx,
     )
     expect(res.status).toBe(200)
     expect(env.purchases).toHaveLength(1)
@@ -233,6 +252,7 @@ describe('POST /api/redsys/notify', () => {
         body: notifyBody({ Ds_Order: order, Ds_Response: '0000' }, TEST_KEY, order),
       },
       env,
+      mockCtx,
     )
     expect(res.status).toBe(200)
     expect(env.purchases).toHaveLength(1) // no duplicate

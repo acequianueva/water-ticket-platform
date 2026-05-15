@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { buildMerchantParams, generateOrderId, sign, verifyAndDecode } from './redsys'
+import { buildMerchantParams, deriveOrderKey, generateOrderId, sign, verifyAndDecode } from './redsys'
 
-// HMAC_SHA512_V2: key is used as a raw string, first 16 chars become the AES key.
+// HMAC_SHA512_V2: merchant key is used raw; first 16 chars become the AES-128 key.
 // Using the publicly documented Redsys test key.
 const TEST_KEY = 'sq7HjrUOBfKmC576ILgskD5srU870gJ7'
 const TEST_ORDER = '20260506ABCD'
@@ -28,8 +28,21 @@ describe('buildMerchantParams', () => {
     // base64url has no +, /, or = characters
     expect(encoded).not.toMatch(/[+/=]/)
     // round-trip: restore padding and decode
-    const padded = encoded + '=='.substring(0, (4 - (encoded.length % 4)) % 4)
+    const padded = encoded.replace(/-/g, '+').replace(/_/g, '/')
     expect(JSON.parse(Buffer.from(padded, 'base64').toString())).toEqual(params)
+  })
+})
+
+describe('deriveOrderKey', () => {
+  it('returns a base64 string of the AES-encrypted order', () => {
+    const key = deriveOrderKey(TEST_KEY, '1234567890')
+    // Must be standard base64 (not base64url) and decode to 16 bytes (one AES block)
+    expect(key).toMatch(/^[A-Za-z0-9+/]+=*$/)
+    expect(Buffer.from(key, 'base64').length).toBe(16)
+  })
+
+  it('produces a different key for a different order', () => {
+    expect(deriveOrderKey(TEST_KEY, '1234567890')).not.toBe(deriveOrderKey(TEST_KEY, '0987654321'))
   })
 })
 

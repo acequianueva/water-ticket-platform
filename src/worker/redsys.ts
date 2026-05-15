@@ -1,5 +1,7 @@
 import { createCipheriv, createHmac } from 'node:crypto'
 
+// Reference: https://pagosonline.redsys.es/desarrolladores-inicio/documentacion-operativa/autorizacion/
+//            https://pagosonline.redsys.es/desarrolladores-inicio/documentacion-operativa/firmar-una-operacion/
 export const TPV_URL = 'https://sis-t.redsys.es:25443/sis/realizarPago' // swap to sis.redsys.es for live
 export const SIGNATURE_VERSION = 'HMAC_SHA512_V2'
 
@@ -13,15 +15,6 @@ export function generateOrderId(): string {
   return date + rand
 }
 
-// HMAC_SHA512_V2 uses Base64URL for Ds_MerchantParameters
-export function buildMerchantParams(params: Record<string, string>): string {
-  return Buffer.from(JSON.stringify(params))
-    .toString('base64')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=/g, '')
-}
-
 function toBase64Url(b64: string): string {
   return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
 }
@@ -30,11 +23,20 @@ function fromBase64Url(b64url: string): string {
   return b64url.replace(/-/g, '+').replace(/_/g, '/')
 }
 
-// Step 1 — AES-128-CBC key derivation.
-// Key: first 16 chars of the raw merchant key string (not base64-decoded).
-// Encrypt the order number (zero-padded to AES block boundary) with a zero IV.
-// The result is base64-encoded and used as the HMAC key.
-function deriveOrderKey(rawKey: string, order: string): string {
+// Ds_MerchantParameters: JSON encoded as base64URL (per HMAC_SHA512_V2 spec)
+export function buildMerchantParams(params: Record<string, string>): string {
+  return toBase64Url(Buffer.from(JSON.stringify(params)).toString('base64'))
+}
+
+// HMAC_SHA512_V2 key derivation (per official Redsys documentation):
+//   1. AES key = first 16 chars of merchant key, right-padded with zeros if shorter
+//   2. AES-128-CBC encrypt the order (zero-padded to AES block size) with zero IV
+//   3. Base64-encode the result → "diversified key" used as the HMAC-SHA512 key
+//
+// Test vector from documentation:
+//   order "1234567890" → diversified key "RWt3/IPTzYRMXsQtkiGRKg=="
+//   (with key "sq7HjrUOBfKmC576ILgskD5srU870gJ7", first 16 chars = "sq7HjrUOBfKmC576")
+export function deriveOrderKey(rawKey: string, order: string): string {
   const keyBuf = Buffer.alloc(16, 0)
   Buffer.from(rawKey.substring(0, 16), 'ascii').copy(keyBuf, 0, 0, 16)
   const iv = Buffer.alloc(16, 0)
@@ -46,7 +48,7 @@ function deriveOrderKey(rawKey: string, order: string): string {
   return Buffer.concat([cipher.update(orderBuf), cipher.final()]).toString('base64')
 }
 
-// Step 2+3 — HMAC-SHA512 over Ds_MerchantParameters, output in Base64URL.
+// HMAC-SHA512 over Ds_MerchantParameters using the diversified key, output in base64URL
 export function sign(rawKey: string, order: string, merchantParams: string): string {
   const orderKey = deriveOrderKey(rawKey, order)
   return toBase64Url(
@@ -54,7 +56,7 @@ export function sign(rawKey: string, order: string, merchantParams: string): str
   )
 }
 
-// Verify an incoming Redsys notification and decode its parameters.
+// Verify an incoming Redsys notification and decode its base64URL Ds_MerchantParameters.
 export function verifyAndDecode(
   rawKey: string,
   merchantParams: string,

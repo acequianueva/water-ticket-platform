@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
+import { sendPurchaseEmails } from './email'
 import { buildMerchantParams, generateOrderId, sign, SIGNATURE_VERSION, TPV_URL, verifyAndDecode } from './redsys'
 
 export const app = new Hono<{ Bindings: Env }>()
@@ -27,6 +28,10 @@ app.post('/api/pay', async (c) => {
   if (!secretKey) {
     console.error('pay.error: REDSYS_SECRET_KEY-SHA_512 is not set')
     return c.json({ error: 'Payment gateway not configured' }, 503)
+  }
+
+  if (c.env.PURCHASES_ENABLED !== 'true') {
+    return c.json({ error: 'La compra de bonos está temporalmente deshabilitada. Por favor, inténtelo más tarde.' }, 503)
   }
 
   const { hours } = await c.req.json<{ hours: number }>()
@@ -148,6 +153,17 @@ app.post('/api/redsys/notify', async (c) => {
     amount_eur: amountEur,
     voucher_code: voucherCode,
   }))
+
+  // Fire-and-forget — runs after the 200 is returned to Redsys
+  c.executionCtx.waitUntil(
+    sendPurchaseEmails(c.env.RESEND_API_KEY, {
+      order,
+      voucherCode,
+      userName: String(userId),
+      hours,
+      amountEur,
+    }),
+  )
 
   return c.text('OK', 200)
 })
