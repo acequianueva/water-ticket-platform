@@ -1,4 +1,4 @@
-name = "water-vouchers-staging"
+name = "water-ticket-platform"
 main               = "src/worker/index.ts"
 compatibility_date = "2025-01-01"
 compatibility_flags  = ["nodejs_compat"]
@@ -33,12 +33,7 @@ crons = ["0 19 * * 3"]  # Wednesday 21:00 Spain (UTC+2 summer)
 # ── Production ────────────────────────────────────────────────────────────────
 
 [env.production]
-name = "water-vouchers"
-
-[env.production.vars]
-REDSYS_MERCHANT_CODE = ""   # fill in: Caja Rural live merchant code
-REDSYS_TERMINAL      = "1"
-PURCHASES_ENABLED    = "true"        # Set to "false" in Cloudflare dashboard to disable purchases
+name = "water-ticket-worker-production"
 
 [[env.production.d1_databases]]
 binding       = "DB"
