@@ -5,7 +5,23 @@ on:
     branches: [main]
 
 jobs:
-  deploy:
+  qa:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npx oxlint src
+      - run: npx vitest run
+
+  deploy-staging:
+    needs: qa
     runs-on: ubuntu-latest
     environment: cloudflare
     steps:
@@ -17,32 +33,47 @@ jobs:
           cache: npm
 
       - run: npm ci
+      - run: npm run build
 
-      - name: Type check
-        run: npx tsc --noEmit
-
-      - name: Lint
-        run: npx oxlint src
-
-      - name: Test
-        run: npx vitest run
-
-      - name: Build
-        run: npm run build
-
-      - name: Deploy Worker
+      - name: Deploy to staging
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy --env production
+          command: deploy
 
-      - name: Apply D1 migrations
+      - name: Apply D1 migrations (staging)
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: d1 migrations apply water-ticket-staging
+
+  deploy-production:
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    environment: cloudflare
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+      - run: npm run build
+
+      - name: Deploy to production
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy --env production --config wrangler.toml
+
+      - name: Apply D1 migrations (production)
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: d1 migrations apply water-ticket-production --env production
-
-      # Cloudflare Pages deploys the frontend automatically on push to main
-      # via the Pages GitHub integration.

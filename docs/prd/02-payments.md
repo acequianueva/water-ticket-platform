@@ -192,6 +192,24 @@ Reference: [MONEI API docs](https://docs.monei.com) · [MONEI test mode](https:/
 
 ---
 
+## Redsys TPV Virtual — official documentation
+
+- **Developer portal**: https://pagosonline.redsys.es/desarrolladores-inicio/documentacion-operativa/autorizacion/
+- **Signing algorithm**: https://pagosonline.redsys.es/desarrolladores-inicio/documentacion-operativa/firmar-una-operacion/
+
+### Key conclusions from reading the official documentation
+
+- The current Redsys signing standard is **`HMAC_SHA512_V2`** (not `HMAC_SHA256_V1` as described earlier in this PRD). The older `HMAC_SHA256_V1` scheme is documented in a migration guide PDF but is superseded.
+- `Ds_MerchantParameters` must be encoded as **base64URL** (no `+`, `/`, or `=`), not standard base64.
+- `Ds_Signature` is also **base64URL**.
+- Key derivation: take the **first 16 characters** of the merchant secret key (right-padded with zeros if shorter); use those as the AES-128-CBC key (zero IV) to encrypt the order number (zero-padded to 16-byte multiple). The AES output is **base64-encoded** and that base64 string is used as the HMAC-SHA512 key.
+- The merchant secret key stored in Cloudflare is used **raw** (not base64-decoded) — only its first 16 characters matter for key derivation.
+- Integration type: **redirection** (HTTP POST form to the Redsys hosted page). Does not require PCI DSS certification.
+- Test URL: `https://sis-t.redsys.es:25443/sis/realizarPago`
+- Live URL: `https://sis.redsys.es/sis/realizarPago`
+
+---
+
 ## Redsys TPV Virtual — concrete implementation (v1, credit/debit card only)
 
 **Decision**: Redsys via Federico's existing Caja Rural contract. v1 supports credit/debit card only. Apple Pay and Google Pay are deferred to v2 (see below).
@@ -199,7 +217,7 @@ Reference: [MONEI API docs](https://docs.monei.com) · [MONEI test mode](https:/
 ### Prerequisites (before writing code)
 
 - [ ] Federico confirms TPV Virtual is active on the Caja Rural contract
-- [ ] Obtain from Caja Rural: `Ds_Merchant_MerchantCode`, `Ds_Merchant_Terminal`, and the HMAC-SHA256 secret key
+- [ ] Obtain from Caja Rural: `Ds_Merchant_MerchantCode`, `Ds_Merchant_Terminal`, and the HMAC_SHA512_V2 secret key
 - [ ] Request test/sandbox credentials (7-day window — coordinate with sprint start)
 - [ ] Confirm the live and test TPV URLs with Caja Rural:
   - Test: `https://sis-t.redsys.es:25443/sis/realizarPago`
@@ -229,15 +247,14 @@ The frontend POSTs `{ hours: number }` to the Worker. The Worker:
 }
 ```
 
-5. Base64-encodes the JSON → `Ds_MerchantParameters`
-6. Signs with HMAC-SHA256:
-   - Derive a per-order key: `HMAC-SHA256(secretKey, Ds_Merchant_Order)` using 3DES
-   - Then: `HMAC-SHA256(derivedKey, Ds_MerchantParameters)` → Base64 → `Ds_Signature`
-7. Returns `{ Ds_MerchantParameters, Ds_SignatureVersion: "HMAC_SHA256_V1", Ds_Signature, tpvUrl }` to the frontend
+5. Base64URL-encodes the JSON → `Ds_MerchantParameters`
+6. Signs with HMAC_SHA512_V2:
+   - AES key = first 16 chars of merchant secret (zero-padded to 16 bytes)
+   - Derive order key: AES-128-CBC(order zero-padded to 16 bytes, key=above, IV=zeros) → base64-encode the result
+   - Signature: HMAC-SHA512(`Ds_MerchantParameters`, derived key) → base64URL → `Ds_Signature`
+7. Returns `{ Ds_MerchantParameters, Ds_SignatureVersion: "HMAC_SHA512_V2", Ds_Signature, tpvUrl }` to the frontend
 
 The frontend auto-submits a hidden HTML form POST to `tpvUrl` — the browser redirects to the Redsys hosted page.
-
-> The signing algorithm is the Redsys HMAC_SHA256_V1 scheme. Use the [`redsys-easy`](https://github.com/javicantos/redsys-easy) npm package — it handles key derivation and signing correctly and is well-tested.
 
 ### Step 2 — Server-to-server notification handler (Worker, `POST /api/redsys/notify`)
 
@@ -303,7 +320,7 @@ All credentials are stored in **Cloudflare Workers Secrets** — never in code, 
 
 | Secret name | Value |
 |---|---|
-| `REDSYS_SECRET_KEY` | HMAC-SHA256 key provided by Caja Rural |
+| `REDSYS_SECRET_KEY-SHA_512` | HMAC_SHA512_V2 signing key provided by Caja Rural |
 | `REDSYS_MERCHANT_CODE` | Merchant code from TPV contract |
 | `REDSYS_TERMINAL` | Terminal number from TPV contract |
 | `RESEND_API_KEY` | Resend API key for transactional email |

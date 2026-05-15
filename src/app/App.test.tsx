@@ -1,42 +1,92 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 
+function setLocation(pathname: string, search = '') {
+  Object.defineProperty(window, 'location', {
+    writable: true,
+    configurable: true,
+    value: { pathname, search, href: `http://localhost${pathname}${search}` },
+  })
+}
+
 beforeEach(() => {
-  vi.unstubAllGlobals()
+  vi.restoreAllMocks()
+  setLocation('/')
 })
 
-describe('App', () => {
-  it('shows loading state before fetch resolves', () => {
-    vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})))
+describe('App routing', () => {
+  it('renders the buy page at the root path', () => {
     render(<App />)
-    expect(screen.getByTestId('greeting')).toHaveTextContent('Cargando...')
+    expect(screen.getByText('Comprar horas de agua')).toBeInTheDocument()
   })
 
-  it('renders greeting returned by the API', async () => {
+  it('renders the confirmation page at /confirmacion', () => {
+    setLocation('/confirmacion', '?order=20260506TEST')
+    vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {}))) // pending — shows loading text
+    render(<App />)
+    expect(screen.getByText('Confirmando pago…')).toBeInTheDocument()
+  })
+
+  it('shows a payment error passed via query param', () => {
+    setLocation('/', '?error=payment_failed')
+    render(<App />)
+    expect(screen.getByText('payment_failed')).toBeInTheDocument()
+  })
+})
+
+describe('BuyPage', () => {
+  it('shows a pay button with the correct amount for the default 1 hour', () => {
+    render(<App />)
+    expect(screen.getByRole('button', { name: /Pagar €12\.00/ })).toBeInTheDocument()
+  })
+
+  it('shows an error banner when the API call fails', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.reject(new Error('network error'))),
+    )
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: /Pagar/ }))
+    await waitFor(() =>
+      expect(screen.getByText(/Error al conectar con el servidor de pago/)).toBeInTheDocument(),
+    )
+  })
+})
+
+describe('ConfirmacionPage', () => {
+  it('shows the voucher after a successful API poll', async () => {
+    setLocation('/confirmacion', '?order=20260506ABCD')
     vi.stubGlobal(
       'fetch',
       vi.fn(() =>
         Promise.resolve({
-          json: () => Promise.resolve({ message: 'Bienvenido a Acequia Nueva' }),
-        } as Response)
-      )
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              found: true,
+              purchase: {
+                name: 'Federico Test',
+                hours: 3,
+                amount_eur: 36,
+                voucher_code: 'ACE-20260506-ABC123',
+                created_at: '2026-05-06T10:00:00Z',
+              },
+            }),
+        } as Response),
+      ),
     )
     render(<App />)
     await waitFor(() =>
-      expect(screen.getByTestId('greeting')).toHaveTextContent(
-        'Bienvenido a Acequia Nueva'
-      )
+      expect(screen.getByText('ACE-20260506-ABC123')).toBeInTheDocument(),
     )
+    expect(screen.getByText('Federico Test')).toBeInTheDocument()
+    expect(screen.getByText('3 h')).toBeInTheDocument()
   })
 
-  it('shows error message when fetch fails', async () => {
-    vi.stubGlobal('fetch', vi.fn(() => Promise.reject(new Error('Network error'))))
+  it('shows an error when no order is in the URL', () => {
+    setLocation('/confirmacion', '')
     render(<App />)
-    await waitFor(() =>
-      expect(screen.getByTestId('greeting')).toHaveTextContent(
-        'Error al cargar el saludo'
-      )
-    )
+    expect(screen.getByText(/No se encontró el número de pedido/)).toBeInTheDocument()
   })
 })

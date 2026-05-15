@@ -1,6 +1,4 @@
-REDSYS_SECRET_KEY=your_redsys_secret_key_here
-REDSYS_MERCHANT_CODE=your_merchant_code_here
-REDSYS_TERMINAL=1
+REDSYS_SECRET_KEY=your_redsys_key_here
 RESEND_API_KEY=re_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # Generate with: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 SESSION_SECRET=replace_with_32_byte_hex_string

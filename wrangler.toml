@@ -1,8 +1,14 @@
 name = "water-ticket-platform"
 main               = "src/worker/index.ts"
 compatibility_date = "2025-01-01"
+compatibility_flags  = ["nodejs_compat"]
 
 # ── Staging (default) ─────────────────────────────────────────────────────────
+
+[vars]
+REDSYS_MERCHANT_CODE = "263100000"   # Test merchant code
+REDSYS_TERMINAL      = "69"
+PURCHASES_ENABLED    = "true"        # Set to "false" in Cloudflare dashboard to disable purchases
 
 [[d1_databases]]
 binding       = "DB"
