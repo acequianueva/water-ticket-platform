@@ -6,7 +6,7 @@ import { buildMerchantParams, sign } from './redsys'
 const TEST_KEY = 'sq7HjrUOBfKmC576ILgskD5srU870gJ7' // standard Redsys test key
 
 // Hono reads executionCtx from the 4th argument to app.request, not from env
-const mockCtx = { waitUntil: (_p: Promise<unknown>) => void 0, passThroughOnException: () => void 0 }
+const mockCtx: ExecutionContext = { waitUntil: (_p: Promise<unknown>) => void 0, passThroughOnException: () => void 0, props: undefined }
 
 type Purchase = {
   user_id: number; season_id: number; hours: number
