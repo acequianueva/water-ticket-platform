@@ -11,4 +11,5 @@ interface Env {
   RESEND_API_KEY: string
   SESSION_SECRET: string
   PURCHASES_ENABLED: string
+  ENVIRONMENT: string
 }
