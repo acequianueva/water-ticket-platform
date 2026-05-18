@@ -1,4 +1,4 @@
-name: Deploy
+name: Deploy to Production
 
 on:
   push:
@@ -20,37 +20,8 @@ jobs:
       - run: npx oxlint src
       - run: npx vitest run
 
-  deploy-staging:
-    needs: qa
-    runs-on: ubuntu-latest
-    environment: cloudflare
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: npm
-
-      - run: npm ci
-      - run: npm run build
-
-      - name: Deploy to staging
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy
-
-      - name: Apply D1 migrations (staging)
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: d1 migrations apply water-ticket-staging
-
   deploy-production:
-    needs: deploy-staging
+    needs: qa
     runs-on: ubuntu-latest
     environment: cloudflare
     steps:

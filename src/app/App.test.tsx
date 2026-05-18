@@ -18,14 +18,14 @@ beforeEach(() => {
 describe('App routing', () => {
   it('renders the buy page at the root path', () => {
     render(<App />)
-    expect(screen.getByText('Comprar horas de agua')).toBeInTheDocument()
+    expect(screen.getByText('Buy water hours')).toBeInTheDocument()
   })
 
   it('renders the confirmation page at /confirmacion', () => {
     setLocation('/confirmacion', '?order=20260506TEST')
     vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {}))) // pending — shows loading text
     render(<App />)
-    expect(screen.getByText('Confirmando pago…')).toBeInTheDocument()
+    expect(screen.getByText('Confirming payment…')).toBeInTheDocument()
   })
 
   it('shows a payment error passed via query param', () => {
@@ -38,7 +38,7 @@ describe('App routing', () => {
 describe('BuyPage', () => {
   it('shows a pay button with the correct amount for the default 1 hour', () => {
     render(<App />)
-    expect(screen.getByRole('button', { name: /Pagar €12\.00/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Pay €12\.00/ })).toBeInTheDocument()
   })
 
   it('shows an error banner when the API call fails', async () => {
@@ -47,9 +47,9 @@ describe('BuyPage', () => {
       vi.fn(() => Promise.reject(new Error('network error'))),
     )
     render(<App />)
-    fireEvent.click(screen.getByRole('button', { name: /Pagar/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Pay/ }))
     await waitFor(() =>
-      expect(screen.getByText(/Error al conectar con el servidor de pago/)).toBeInTheDocument(),
+      expect(screen.getByText(/Failed to connect to the payment server/)).toBeInTheDocument(),
     )
   })
 })
@@ -87,6 +87,6 @@ describe('ConfirmacionPage', () => {
   it('shows an error when no order is in the URL', () => {
     setLocation('/confirmacion', '')
     render(<App />)
-    expect(screen.getByText(/No se encontró el número de pedido/)).toBeInTheDocument()
+    expect(screen.getByText(/Order number not found/)).toBeInTheDocument()
   })
 })

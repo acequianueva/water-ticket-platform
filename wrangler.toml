@@ -1,4 +1,4 @@
-name = "water-ticket-platform"
+name = "water-ticket-staging"
 main               = "src/worker/index.ts"
 compatibility_date = "2025-01-01"
 compatibility_flags  = ["nodejs_compat"]
@@ -33,7 +33,12 @@ crons = ["0 19 * * 3"]  # Wednesday 21:00 Spain (UTC+2 summer)
 # ── Production ────────────────────────────────────────────────────────────────
 
 [env.production]
-name = "water-ticket-worker-production"
+name = "water-ticket-production"
+
+[env.production.vars]
+REDSYS_MERCHANT_CODE = "263100000"   # TODO: replace with real merchant code in Cloudflare dashboard
+REDSYS_TERMINAL      = "69"
+PURCHASES_ENABLED    = "true"
 
 [[env.production.d1_databases]]
 binding       = "DB"
@@ -51,3 +56,18 @@ bucket_name = "vouchers-production"
 
 [env.production.triggers]
 crons = ["0 19 * * 3"]
+
+[observability]
+enabled = false
+head_sampling_rate = 1
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+persist = true
+invocation_logs = true
+
+[observability.traces]
+enabled = false
+persist = true
+head_sampling_rate = 1

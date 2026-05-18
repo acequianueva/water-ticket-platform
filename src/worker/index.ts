@@ -8,7 +8,7 @@ export const app = new Hono<{ Bindings: Env }>()
 app.use('/api/*', cors())
 
 app.get('/api/hello', (c) => {
-  return c.json({ message: 'Bienvenido a Acequia Nueva' })
+  return c.json({ message: 'Welcome to Acequia Nueva' })
 })
 
 // ── Payment initiation ────────────────────────────────────────────────────────
@@ -31,7 +31,7 @@ app.post('/api/pay', async (c) => {
   }
 
   if (c.env.PURCHASES_ENABLED !== 'true') {
-    return c.json({ error: 'La compra de bonos está temporalmente deshabilitada. Por favor, inténtelo más tarde.' }, 503)
+    return c.json({ error: 'Purchases are temporarily disabled. Please try again later.' }, 503)
   }
 
   const { hours } = await c.req.json<{ hours: number }>()
