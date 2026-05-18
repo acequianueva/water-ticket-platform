@@ -36,7 +36,7 @@ export default function BuyPage({ error }: { error?: string }) {
       const data = (await res.json()) as RedsysParams
       setRedsysParams(data)
     } catch {
-      setPayError('Error al conectar con el servidor de pago. Inténtalo de nuevo.')
+      setPayError('Failed to connect to the payment server. Please try again.')
       setLoading(false)
     }
   }
@@ -45,8 +45,8 @@ export default function BuyPage({ error }: { error?: string }) {
 
   return (
     <main style={{ fontFamily: 'sans-serif', padding: '2rem', maxWidth: '480px', margin: '0 auto' }}>
-      <h1>Comprar horas de agua</h1>
-      <p style={{ color: '#6b7280' }}>€{PRICE_PER_HOUR} / hora · mínimo 1 hora, máximo 10</p>
+      <h1>Buy water hours</h1>
+      <p style={{ color: '#6b7280' }}>€{PRICE_PER_HOUR} / hour · minimum 1 hour, maximum 10</p>
 
       {payError && (
         <p style={{ color: '#dc2626', background: '#fef2f2', padding: '0.75rem', borderRadius: '6px' }}>
@@ -56,7 +56,7 @@ export default function BuyPage({ error }: { error?: string }) {
 
       <div style={{ margin: '1.5rem 0' }}>
         <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>
-          Número de horas
+          Number of hours
         </label>
         <input
           type="number"
@@ -87,7 +87,7 @@ export default function BuyPage({ error }: { error?: string }) {
           marginTop: '0.5rem',
         }}
       >
-        {loading ? 'Conectando con el banco...' : `Pagar €${total}`}
+        {loading ? 'Connecting to bank...' : `Pay €${total}`}
       </button>
 
       {/* Auto-submitted to Redsys TPV once params arrive */}

@@ -68,7 +68,7 @@ describe('GET /api/hello', () => {
     const res = await app.request('http://localhost/api/hello')
     expect(res.status).toBe(200)
     const body = (await res.json()) as { message: string }
-    expect(body.message).toBe('Bienvenido a Acequia Nueva')
+    expect(body.message).toBe('Welcome to Acequia Nueva')
   })
 
   it('includes CORS header', async () => {

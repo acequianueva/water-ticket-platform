@@ -20,7 +20,7 @@ export default function ConfirmacionPage() {
   useEffect(() => {
     const order = new URLSearchParams(window.location.search).get('order')
     if (!order) {
-      setError('No se encontró el número de pedido en la URL.')
+      setError('Order number not found in the URL.')
       return
     }
 
@@ -41,7 +41,7 @@ export default function ConfirmacionPage() {
       if (attempts < 4) {
         setTimeout(poll, 1000)
       } else {
-        setError('El pago está siendo procesado. Puede tardar unos segundos más. Recarga la página si no ves la confirmación.')
+        setError('Payment is being processed. It may take a few more seconds. Reload the page if you don\'t see the confirmation.')
       }
     }
 
@@ -52,7 +52,7 @@ export default function ConfirmacionPage() {
     return (
       <main style={{ fontFamily: 'sans-serif', padding: '2rem', maxWidth: '480px', margin: '0 auto' }}>
         <p style={{ color: '#dc2626' }}>{error}</p>
-        <a href="/">Volver al inicio</a>
+        <a href="/">Back to home</a>
       </main>
     )
   }
@@ -60,30 +60,30 @@ export default function ConfirmacionPage() {
   if (!purchase) {
     return (
       <main style={{ fontFamily: 'sans-serif', padding: '2rem' }}>
-        <p>Confirmando pago…</p>
+        <p>Confirming payment…</p>
       </main>
     )
   }
 
   return (
     <main style={{ fontFamily: 'sans-serif', padding: '2rem', maxWidth: '480px', margin: '0 auto' }}>
-      <h1 style={{ color: '#16a34a' }}>Pago confirmado</h1>
+      <h1 style={{ color: '#16a34a' }}>Payment confirmed</h1>
       <table style={{ borderCollapse: 'collapse', width: '100%', marginTop: '1rem' }}>
         <tbody>
           <tr>
-            <td style={cell}>Titular</td>
+            <td style={cell}>Name</td>
             <td style={cell}><strong>{purchase.name}</strong></td>
           </tr>
           <tr>
-            <td style={cell}>Horas compradas</td>
+            <td style={cell}>Hours purchased</td>
             <td style={cell}><strong>{purchase.hours} h</strong></td>
           </tr>
           <tr>
-            <td style={cell}>Importe pagado</td>
+            <td style={cell}>Amount paid</td>
             <td style={cell}><strong>€{purchase.amount_eur.toFixed(2)}</strong></td>
           </tr>
           <tr>
-            <td style={cell}>Código de vale</td>
+            <td style={cell}>Voucher code</td>
             <td style={cell}>
               <strong style={{ fontFamily: 'monospace', fontSize: '1.1rem', letterSpacing: '0.05em' }}>
                 {purchase.voucher_code}
@@ -91,15 +91,15 @@ export default function ConfirmacionPage() {
             </td>
           </tr>
           <tr>
-            <td style={cell}>Fecha</td>
+            <td style={cell}>Date</td>
             <td style={cell}>{new Date(purchase.created_at).toLocaleString('es-ES')}</td>
           </tr>
         </tbody>
       </table>
       <p style={{ marginTop: '1.5rem', color: '#6b7280' }}>
-        Guarda este código — preséntaselo a Francisco cuando vayas a regar.
+        Save this code — present it to Francisco when you go to irrigate.
       </p>
-      <a href="/" style={{ display: 'inline-block', marginTop: '1rem' }}>Comprar más horas</a>
+      <a href="/" style={{ display: 'inline-block', marginTop: '1rem' }}>Buy more hours</a>
     </main>
   )
 }

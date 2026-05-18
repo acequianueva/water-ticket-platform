@@ -1,12 +1,13 @@
-name: QA
+name: Staging
 
 on:
   pull_request:
     branches: [main]
-    types: [opened, synchronize, reopened, labeled]
+    types: [opened, synchronize, reopened, closed]
 
 jobs:
   qa:
+    if: github.event.action != 'closed'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -17,23 +18,13 @@ jobs:
           cache: npm
 
       - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npx oxlint src
+      - run: npx vitest run
 
-      - name: Type check
-        run: npx tsc --noEmit
-
-      - name: Lint
-        run: npx oxlint src
-
-      - name: Test
-        run: npx vitest run
-
-  # Deploys the PR branch to the shared staging environment.
-  # Only runs when the PR has the 'preview' label.
-  # Note: staging is shared — if multiple 'preview' PRs are active, the last
-  # push wins. Remove the label from a PR to stop it overwriting staging.
-  preview-staging:
+  deploy-to-staging:
+    if: github.event.action != 'closed'
     needs: qa
-    if: contains(github.event.pull_request.labels.*.name, 'preview')
     runs-on: ubuntu-latest
     environment: cloudflare
     steps:
@@ -48,6 +39,37 @@ jobs:
       - run: npm run build
 
       - name: Deploy PR branch to staging
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy
+
+      - name: Apply D1 migrations (staging)
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: d1 migrations apply water-ticket-staging
+
+  reset-staging-to-main:
+    if: github.event.action == 'closed' && github.event.pull_request.merged == false
+    runs-on: ubuntu-latest
+    environment: cloudflare
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+      - run: npm run build
+
+      - name: Reset staging to main
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
