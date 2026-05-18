@@ -9,6 +9,7 @@ compatibility_flags  = ["nodejs_compat"]
 REDSYS_MERCHANT_CODE = "263100000"   # Test merchant code
 REDSYS_TERMINAL      = "69"
 PURCHASES_ENABLED    = "true"        # Set to "false" in Cloudflare dashboard to disable purchases
+ENVIRONMENT          = "staging"
 
 [[d1_databases]]
 binding       = "DB"
@@ -39,6 +40,7 @@ name = "water-ticket-production"
 REDSYS_MERCHANT_CODE = "263100000"   # TODO: replace with real merchant code in Cloudflare dashboard
 REDSYS_TERMINAL      = "69"
 PURCHASES_ENABLED    = "true"
+ENVIRONMENT          = "production"
 
 [[env.production.d1_databases]]
 binding       = "DB"

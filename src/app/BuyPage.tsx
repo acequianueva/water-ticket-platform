@@ -32,7 +32,12 @@ export default function BuyPage({ error }: { error?: string }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ hours }),
       })
-      if (!res.ok) throw new Error('Server error')
+      if (!res.ok) {
+        const body = await res.json().catch(() => null) as { error?: string } | null
+        setPayError(body?.error ?? 'Failed to connect to the payment server. Please try again.')
+        setLoading(false)
+        return
+      }
       const data = (await res.json()) as RedsysParams
       setRedsysParams(data)
     } catch {

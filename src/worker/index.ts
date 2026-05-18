@@ -14,6 +14,7 @@ app.get('/api/hello', (c) => {
 // ── Payment initiation ────────────────────────────────────────────────────────
 
 app.post('/api/pay', async (c) => {
+  const isStaging = c.env.ENVIRONMENT !== 'production'
   const secretKey = c.env['REDSYS_SECRET_KEY-SHA_512']
 
   // Verify secrets are present on first use — logs appear in `wrangler tail`
@@ -23,11 +24,12 @@ app.post('/api/pay', async (c) => {
     terminal: c.env.REDSYS_TERMINAL || '(missing)',
     secret_key_present: !!secretKey,
     tpv_url: TPV_URL,
+    environment: c.env.ENVIRONMENT || '(missing)',
   }))
 
   if (!secretKey) {
     console.error('pay.error: REDSYS_SECRET_KEY-SHA_512 is not set')
-    return c.json({ error: 'Payment gateway not configured' }, 503)
+    return c.json({ error: 'Payment gateway not configured: REDSYS_SECRET_KEY-SHA_512 is missing' }, 503)
   }
 
   if (c.env.PURCHASES_ENABLED !== 'true') {
@@ -39,40 +41,49 @@ app.post('/api/pay', async (c) => {
     return c.json({ error: 'hours must be between 1 and 10' }, 400)
   }
 
-  const order = generateOrderId()
-  const amount = (hours * 1200).toString() // Redsys amounts are in euro-cents
-  const baseUrl = new URL(c.req.url).origin
+  try {
+    const order = generateOrderId()
+    const amount = (hours * 1200).toString() // Redsys amounts are in euro-cents
+    const baseUrl = new URL(c.req.url).origin
 
-  const paramsObj: Record<string, string> = {
-    DS_MERCHANT_AMOUNT: amount,
-    DS_MERCHANT_ORDER: order,
-    DS_MERCHANT_MERCHANTCODE: c.env.REDSYS_MERCHANT_CODE,
-    DS_MERCHANT_CURRENCY: '978', // EUR
-    DS_MERCHANT_TRANSACTIONTYPE: '0', // authorisation
-    DS_MERCHANT_TERMINAL: c.env.REDSYS_TERMINAL,
-    DS_MERCHANT_MERCHANTURL: `${baseUrl}/api/redsys/notify`,
-    DS_MERCHANT_URLOK: `${baseUrl}/confirmacion?order=${order}`,
-    DS_MERCHANT_URLKO: `${baseUrl}/buy?error=payment_failed`,
+    const paramsObj: Record<string, string> = {
+      DS_MERCHANT_AMOUNT: amount,
+      DS_MERCHANT_ORDER: order,
+      DS_MERCHANT_MERCHANTCODE: c.env.REDSYS_MERCHANT_CODE,
+      DS_MERCHANT_CURRENCY: '978', // EUR
+      DS_MERCHANT_TRANSACTIONTYPE: '0', // authorisation
+      DS_MERCHANT_TERMINAL: c.env.REDSYS_TERMINAL,
+      DS_MERCHANT_MERCHANTURL: `${baseUrl}/api/redsys/notify`,
+      DS_MERCHANT_URLOK: `${baseUrl}/confirmacion?order=${order}`,
+      DS_MERCHANT_URLKO: `${baseUrl}/buy?error=payment_failed`,
+    }
+
+    const Ds_MerchantParameters = buildMerchantParams(paramsObj)
+    const Ds_Signature = sign(secretKey, order, Ds_MerchantParameters)
+
+    await c.env.SESSIONS.put(
+      `redsys:order:${order}`,
+      JSON.stringify({ userId: 1, seasonId: 1, hours, amountEur: hours * 12 }),
+      { expirationTtl: 3600 },
+    )
+
+    console.log(JSON.stringify({
+      event: 'pay.created',
+      order,
+      hours,
+      amount_eur: hours * 12,
+      notify_url: paramsObj.DS_MERCHANT_MERCHANTURL,
+    }))
+
+    return c.json({ Ds_MerchantParameters, Ds_SignatureVersion: SIGNATURE_VERSION, Ds_Signature, tpvUrl: TPV_URL, order })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    console.error(JSON.stringify({ event: 'pay.error', error: message }))
+    return c.json(
+      { error: isStaging ? `Internal error: ${message}` : 'Failed to initiate payment. Please try again.' },
+      500,
+    )
   }
-
-  const Ds_MerchantParameters = buildMerchantParams(paramsObj)
-  const Ds_Signature = sign(secretKey, order, Ds_MerchantParameters)
-
-  await c.env.SESSIONS.put(
-    `redsys:order:${order}`,
-    JSON.stringify({ userId: 1, seasonId: 1, hours, amountEur: hours * 12 }),
-    { expirationTtl: 3600 },
-  )
-
-  console.log(JSON.stringify({
-    event: 'pay.created',
-    order,
-    hours,
-    amount_eur: hours * 12,
-    notify_url: paramsObj.DS_MERCHANT_MERCHANTURL,
-  }))
-
-  return c.json({ Ds_MerchantParameters, Ds_SignatureVersion: SIGNATURE_VERSION, Ds_Signature, tpvUrl: TPV_URL, order })
 })
 
 // ── Redsys server-to-server notification ─────────────────────────────────────
