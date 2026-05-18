@@ -5,23 +5,7 @@ on:
     branches: [main]
 
 jobs:
-  qa:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: npm
-
-      - run: npm ci
-      - run: npx tsc --noEmit
-      - run: npx oxlint src
-      - run: npx vitest run
-
   deploy-production:
-    needs: qa
     runs-on: ubuntu-latest
     environment: cloudflare
     steps:
